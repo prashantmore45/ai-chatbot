@@ -18,16 +18,36 @@
     <link rel="icon" href="https://www.gstatic.com/lamda/images/gemini_favicon_f069958c85030456e93de685481c559f160ea06b.png">
 </head>
 <body>
-    
-    <nav class="top-nav">
-        <div class="model-selector">
-            <span class="material-symbols-rounded">sparkle</span>
-            <select id="model-select">
-                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-                <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
-            </select>
-        </div>
-        <div class="nav-right">
+    <div class="app-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <button id="new-chat-btn" class="new-chat-btn">
+                    <span class="material-symbols-rounded">add</span>
+                    <span>New Chat</span>
+                </button>
+            </div>
+            <div class="chat-history-list" id="chat-list">
+                <!-- Chat history items will be injected here -->
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <nav class="top-nav">
+                <div class="nav-left">
+                    <button id="toggle-sidebar-btn" class="icon-btn" title="Toggle Sidebar">
+                        <span class="material-symbols-rounded">menu</span>
+                    </button>
+                    <div class="model-selector">
+                        <span class="material-symbols-rounded">sparkle</span>
+                        <select id="model-select">
+                            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                            <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="nav-right">
             <button id="theme-toggle-btn" class="icon-btn" title="Toggle Theme"><span class="material-symbols-rounded">dark_mode</span></button>
             <button id="delete-chats-btn" class="icon-btn" title="Clear Chat"><span class="material-symbols-rounded">delete_history</span></button>
         </div>
@@ -92,20 +112,22 @@
         </div>
     </div>
 
-    <footer class="app-footer">
-        <div class="footer-content">
-            <p>&copy; 2025–<span id="year"></span> Prashant More. All rights reserved.</p>
-            <p>AI Chatbot • Built by <strong>Prashant More</strong> • Powered by Google Gemini</p>
-            <div class="social-links">
-                <a href="https://github.com/prashantmore45" target="_blank" title="GitHub">
-                    <i class="fab fa-github"></i> GitHub
-                </a>
-                <a href="https://linkedin.com/in/prashant-more-48b164287" target="_blank" title="LinkedIn">
-                    <i class="fab fa-linkedin"></i> LinkedIn
-                </a>
+        <footer class="app-footer">
+            <div class="footer-content">
+                <p>&copy; 2025–<span id="year"></span> Prashant More. All rights reserved.</p>
+                <p>AI Chatbot • Built by <strong>Prashant More</strong> • Powered by Google Gemini</p>
+                <div class="social-links">
+                    <a href="https://github.com/prashantmore45" target="_blank" title="GitHub">
+                        <i class="fab fa-github"></i> GitHub
+                    </a>
+                    <a href="https://linkedin.com/in/prashant-more-48b164287" target="_blank" title="LinkedIn">
+                        <i class="fab fa-linkedin"></i> LinkedIn
+                    </a>
+                </div>
             </div>
-        </div>
-    </footer>
+        </footer>
+        </div> <!-- End main-content -->
+    </div> <!-- End app-wrapper -->
     <script>
         document.getElementById("year").textContent = new Date().getFullYear();
     </script>

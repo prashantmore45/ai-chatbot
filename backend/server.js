@@ -37,12 +37,12 @@ app.use("/api", limiter);
 
 // Debounce memory updates to save quota
 let memoryUpdateQueue = null;
-const updateMemoryAsync = async (history) => {
+const updateMemoryAsync = async (sessionId, history) => {
     if (history.length < 4) return; // Only summarize if enough context
     
     // Simple logic: If we have new chats, update summary
     try {
-        const memory = await loadMemory();
+        const memory = await loadMemory(sessionId);
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }); // Use flash for cheap summaries
         
         const prompt = `Analyze this conversation and update the user profile JSON. 
@@ -57,8 +57,8 @@ const updateMemoryAsync = async (history) => {
         const jsonStr = text.replace(/```json|```/g, "").trim();
         const updates = JSON.parse(jsonStr);
         
-        await saveMemory(updates);
-        console.log("🧠 Memory updated in background");
+        await saveMemory(sessionId, updates);
+        console.log(`🧠 Memory updated in background for session: ${sessionId}`);
     } catch (e) {
         console.error("Memory update skipped:", e.message);
     }
@@ -68,19 +68,16 @@ const updateMemoryAsync = async (history) => {
 
 app.post("/api/generate-stream", async (req, res) => {
     try {
-        const { message, history, model, image } = req.body;
+        const { message, history, model, image, sessionId } = req.body;
 
         const modelMap = {
-          // Frontend sends -> We use this backend model
-          "gemini-1.5-flash": "gemini-2.5-flash",
-          "gemini-1.5-pro": "gemini-2.5-pro",
-          "fast": "gemini-2.5-flash",
-          "smart": "gemini-2.5-pro"
+          "gemini-2.5-flash": "gemini-2.5-flash",
+          "gemini-2.5-pro": "gemini-2.5-pro"
         };
 
         const selectedModel = modelMap[model] || "gemini-2.5-flash";
 
-        console.log(`🤖 Using model: ${selectedModel}`);
+        console.log(`🤖 Using model: ${selectedModel} for session: ${sessionId || "default"}`);
 
         // 1. Setup Stream Headers (SSE)
         res.setHeader("Content-Type", "text/event-stream");
@@ -88,7 +85,7 @@ app.post("/api/generate-stream", async (req, res) => {
         res.setHeader("Connection", "keep-alive");
 
         // 2. Load Memory Context
-        const memory = await loadMemory();
+        const memory = await loadMemory(sessionId);
         const systemInstruction = `
             You are a helpful AI Assistant.
             User Context: ${JSON.stringify(memory.profile)}
@@ -134,7 +131,7 @@ app.post("/api/generate-stream", async (req, res) => {
         res.end();
 
         // 7. Background Memory Update
-        updateMemoryAsync(history);
+        updateMemoryAsync(sessionId, history);
 
     } catch (error) {
         console.error("Stream Error:", error);

@@ -32,9 +32,155 @@ let isGenerating = false;
 let abortController = null;
 let chatHistory = [];
 
-const API_URL = window.location.hostname === 'localhost' 
-    ? 'http://localhost:3000/api/generate-stream' 
-    : 'https://ai-chatbot-backend-vzzr.onrender.com/api/generate-stream';
+const API_URL = '/api/generate-stream';
+
+let sessions = JSON.parse(localStorage.getItem("chatbot_sessions")) || {};
+let currentSessionId = localStorage.getItem("chatbot_current_session") || null;
+
+// Initialize or load session
+if (!currentSessionId || !sessions[currentSessionId]) {
+    createNewSession();
+} else {
+    chatHistory = sessions[currentSessionId].history || [];
+}
+
+function createNewSession() {
+    const newId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36);
+    sessions[newId] = {
+        title: "New Chat",
+        history: [],
+        createdAt: Date.now()
+    };
+    currentSessionId = newId;
+    chatHistory = [];
+    saveSessions();
+    renderSidebar();
+    chatsContainer.innerHTML = "";
+    toggleWelcomeScreen();
+}
+
+function saveSessions() {
+    localStorage.setItem("chatbot_sessions", JSON.stringify(sessions));
+    localStorage.setItem("chatbot_current_session", currentSessionId);
+}
+
+const chatListContainer = document.getElementById("chat-list");
+
+function renderSidebar() {
+    if (!chatListContainer) return;
+    chatListContainer.innerHTML = "";
+    
+    // Sort sessions by createdAt desc
+    const sortedSessions = Object.entries(sessions).sort((a, b) => b[1].createdAt - a[1].createdAt);
+    
+    sortedSessions.forEach(([id, session]) => {
+        const item = document.createElement("div");
+        item.className = `chat-history-item ${id === currentSessionId ? "active" : ""}`;
+        
+        item.innerHTML = `
+            <span class="title" title="${session.title}">${session.title}</span>
+            <button class="delete-session-btn" title="Delete Chat">
+                <span class="material-symbols-rounded">delete</span>
+            </button>
+        `;
+        
+        item.addEventListener("click", (e) => {
+            if (e.target.closest('.delete-session-btn')) {
+                deleteSession(id);
+            } else {
+                switchSession(id);
+            }
+        });
+        
+        chatListContainer.appendChild(item);
+    });
+}
+
+function switchSession(id) {
+    if (id === currentSessionId) return;
+    if (!sessions[id]) return;
+    
+    if (isGenerating && abortController) {
+        abortController.abort();
+        isGenerating = false;
+        promptInput.disabled = false;
+    }
+    
+    currentSessionId = id;
+    chatHistory = sessions[id].history || [];
+    saveSessions();
+    renderSidebar();
+    
+    chatsContainer.innerHTML = "";
+    if (chatHistory.length > 0) {
+        chatHistory.forEach(msg => {
+            if (msg.role === "user") {
+                const text = msg.parts[0].text.replace(/\n/g, "<br>");
+                chatsContainer.appendChild(createMessageElement(`<div class="message-content"><p class="message-text">${text}</p></div>`, "user-message"));
+            } else if (msg.role === "model") {
+                const text = marked.parse(msg.parts[0].text, { breaks: true });
+                chatsContainer.appendChild(createMessageElement(`<div class="bot-message message"><img src="https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg" class="avatar"><div class="message-content"><div class="message-text">${text}</div><button class="speak-btn" onclick="speakText(this)"><span class="material-symbols-rounded">volume_up</span></button></div></div>`, "bot-message"));
+            }
+        });
+    }
+    toggleWelcomeScreen();
+    setTimeout(scrollToBottom, 100);
+    
+    if (window.innerWidth <= 768) {
+        document.getElementById("sidebar").classList.remove("mobile-open");
+    }
+}
+
+function deleteSession(id) {
+    if (confirm("Are you sure you want to delete this chat?")) {
+        delete sessions[id];
+        if (id === currentSessionId) {
+            const remainingKeys = Object.keys(sessions);
+            if (remainingKeys.length > 0) {
+                switchSession(remainingKeys[0]);
+            } else {
+                createNewSession();
+            }
+        } else {
+            saveSessions();
+            renderSidebar();
+        }
+    }
+}
+
+// Sidebar toggle & New Chat button
+document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("toggle-sidebar-btn")?.addEventListener("click", () => {
+        const sidebar = document.getElementById("sidebar");
+        sidebar.classList.toggle("hidden");
+        if(window.innerWidth <= 768) {
+            sidebar.classList.toggle("mobile-open");
+        }
+    });
+
+    document.getElementById("new-chat-btn")?.addEventListener("click", () => {
+        createNewSession();
+        if (window.innerWidth <= 768) {
+            document.getElementById("sidebar").classList.remove("mobile-open");
+        }
+    });
+
+    // Render initially
+    if (chatHistory.length > 0) {
+        chatHistory.forEach(msg => {
+            if (msg.role === "user") {
+                const text = msg.parts[0].text.replace(/\n/g, "<br>");
+                chatsContainer.appendChild(createMessageElement(`<div class="message-content"><p class="message-text">${text}</p></div>`, "user-message"));
+            } else if (msg.role === "model") {
+                const text = marked.parse(msg.parts[0].text, { breaks: true });
+                chatsContainer.appendChild(createMessageElement(`<div class="bot-message message"><img src="https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg" class="avatar"><div class="message-content"><div class="message-text">${text}</div><button class="speak-btn" onclick="speakText(this)"><span class="material-symbols-rounded">volume_up</span></button></div></div>`, "bot-message"));
+            }
+        });
+        toggleWelcomeScreen();
+        setTimeout(scrollToBottom, 100);
+    }
+    renderSidebar();
+});
 
 // --- VISIBILITY LOGIC (UPDATED) ---
 const toggleWelcomeScreen = () => {
@@ -133,7 +279,8 @@ const handleFormSubmit = async (e) => {
                 message: userMessage,
                 history: chatHistory,
                 model: modelSelect.value,
-                image: currentImage ? { inlineData: { data: currentImage.data, mimeType: currentImage.mime } } : null
+                image: currentImage ? { inlineData: { data: currentImage.data, mimeType: currentImage.mime } } : null,
+                sessionId: currentSessionId
             }),
             signal: abortController.signal
         });
@@ -166,6 +313,18 @@ const handleFormSubmit = async (e) => {
         }
         chatHistory.push({ role: "user", parts: [{ text: userMessage }] });
         chatHistory.push({ role: "model", parts: [{ text: accumulatedText }] });
+        
+        sessions[currentSessionId].history = chatHistory;
+        
+        // Auto-title
+        if (sessions[currentSessionId].title === "New Chat" && userMessage.length > 0) {
+            let title = userMessage.trim().substring(0, 30);
+            if (userMessage.length > 30) title += "...";
+            sessions[currentSessionId].title = title;
+        }
+        
+        saveSessions();
+        renderSidebar();
     } catch (error) {
         textElement.innerHTML = `<span style="color:#ff8a80">Error: ${error.message}</span>`;
         botMsgDiv.classList.remove("loading");
@@ -189,11 +348,7 @@ document.querySelectorAll(".suggestions-item").forEach(item => {
 
 document.querySelector("#theme-toggle-btn").addEventListener("click", () => document.body.classList.toggle("light-mode"));
 document.querySelector("#delete-chats-btn").addEventListener("click", () => {
-    if (confirm("Delete all chat history?")) {
-        chatsContainer.innerHTML = "";
-        chatHistory = [];
-        toggleWelcomeScreen();
-    }
+    deleteSession(currentSessionId);
 });
 
 

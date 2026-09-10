@@ -2,7 +2,6 @@ import fs from "fs/promises"; // Use Promise-based FS
 import path from "path";
 
 const MEMORY_DIR = path.join(process.cwd(), "memory");
-const MEMORY_PATH = path.join(MEMORY_DIR, "memory.json");
 
 const EMPTY_MEMORY = {
     profile: { goal: "", preferences: "", confidence: 0, updatedAt: 0 },
@@ -15,28 +14,25 @@ const EMPTY_MEMORY = {
 (async () => {
     try {
         await fs.mkdir(MEMORY_DIR, { recursive: true });
-        try {
-            await fs.access(MEMORY_PATH);
-        } catch {
-            await fs.writeFile(MEMORY_PATH, JSON.stringify(EMPTY_MEMORY, null, 2));
-        }
     } catch (err) {
         console.error("Memory Store Init Error:", err);
     }
 })();
 
-export async function loadMemory() {
+const getMemoryPath = (sessionId) => path.join(MEMORY_DIR, `memory_${sessionId || "default"}.json`);
+
+export async function loadMemory(sessionId = "default") {
     try {
-        const data = await fs.readFile(MEMORY_PATH, "utf-8");
+        const data = await fs.readFile(getMemoryPath(sessionId), "utf-8");
         return JSON.parse(data);
     } catch (err) {
         return EMPTY_MEMORY;
     }
 }
 
-export async function saveMemory(partialUpdate) {
+export async function saveMemory(sessionId = "default", partialUpdate) {
     try {
-        const current = await loadMemory();
+        const current = await loadMemory(sessionId);
         const updated = {
             profile: { ...current.profile, ...(partialUpdate.profile || {}) },
             project: { ...current.project, ...(partialUpdate.project || {}) },
@@ -44,7 +40,7 @@ export async function saveMemory(partialUpdate) {
             summary: partialUpdate.summary || current.summary
         };
 
-        await fs.writeFile(MEMORY_PATH, JSON.stringify(updated, null, 2));
+        await fs.writeFile(getMemoryPath(sessionId), JSON.stringify(updated, null, 2));
         return updated;
     } catch (err) {
         console.error("Failed to save memory:", err);
