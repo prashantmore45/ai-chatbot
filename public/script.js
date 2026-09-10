@@ -32,7 +32,9 @@ let isGenerating = false;
 let abortController = null;
 let chatHistory = [];
 
-const API_URL = '/api/generate-stream';
+const API_URL = window.location.hostname === 'localhost' 
+    ? 'http://localhost:3000/api/generate-stream' 
+    : 'https://ai-chatbot-backend-vzzr.onrender.com/api/generate-stream';
 
 let sessions = JSON.parse(localStorage.getItem("chatbot_sessions")) || {};
 let currentSessionId = localStorage.getItem("chatbot_current_session") || null;
