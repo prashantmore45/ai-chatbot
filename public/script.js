@@ -36,6 +36,9 @@ const API_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:3000/api/generate-stream' 
     : 'https://ai-chatbot-backend-vzzr.onrender.com/api/generate-stream';
 
+const personaSelect = document.querySelector("#persona-select");
+const stopBtn = document.querySelector("#stop-btn");
+
 let sessions = JSON.parse(localStorage.getItem("chatbot_sessions")) || {};
 let currentSessionId = localStorage.getItem("chatbot_current_session") || null;
 
@@ -118,7 +121,8 @@ function switchSession(id) {
         chatHistory.forEach(msg => {
             if (msg.role === "user") {
                 const text = msg.parts[0].text.replace(/\n/g, "<br>");
-                chatsContainer.appendChild(createMessageElement(`<div class="message-content"><p class="message-text">${text}</p></div>`, "user-message"));
+                const userHtml = `<button class="edit-msg-btn" onclick="editMessage(this)" title="Edit Message"><span class="material-symbols-rounded" style="font-size:18px;">edit</span></button><div class="message-content"><p class="message-text">${text}</p></div>`;
+                chatsContainer.appendChild(createMessageElement(userHtml, "user-message"));
             } else if (msg.role === "model") {
                 const text = marked.parse(msg.parts[0].text, { breaks: true });
                 chatsContainer.appendChild(createMessageElement(`<div class="bot-message message"><img src="https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg" class="avatar"><div class="message-content"><div class="message-text">${text}</div><button class="speak-btn" onclick="speakText(this)"><span class="material-symbols-rounded">volume_up</span></button></div></div>`, "bot-message"));
@@ -172,7 +176,8 @@ document.addEventListener("DOMContentLoaded", () => {
         chatHistory.forEach(msg => {
             if (msg.role === "user") {
                 const text = msg.parts[0].text.replace(/\n/g, "<br>");
-                chatsContainer.appendChild(createMessageElement(`<div class="message-content"><p class="message-text">${text}</p></div>`, "user-message"));
+                const userHtml = `<button class="edit-msg-btn" onclick="editMessage(this)" title="Edit Message"><span class="material-symbols-rounded" style="font-size:18px;">edit</span></button><div class="message-content"><p class="message-text">${text}</p></div>`;
+                chatsContainer.appendChild(createMessageElement(userHtml, "user-message"));
             } else if (msg.role === "model") {
                 const text = marked.parse(msg.parts[0].text, { breaks: true });
                 chatsContainer.appendChild(createMessageElement(`<div class="bot-message message"><img src="https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg" class="avatar"><div class="message-content"><div class="message-text">${text}</div><button class="speak-btn" onclick="speakText(this)"><span class="material-symbols-rounded">volume_up</span></button></div></div>`, "bot-message"));
@@ -212,8 +217,26 @@ fileInput.addEventListener("change", () => {
     const reader = new FileReader();
     reader.onload = (e) => {
         const base64Data = e.target.result.split(',')[1]; 
-        attachedFile = { data: base64Data, mime: file.type, preview: e.target.result };
-        filePreviewContainer.querySelector(".file-preview-img").src = e.target.result;
+        attachedFile = { data: base64Data, mime: file.type, preview: e.target.result, name: file.name };
+        
+        const previewImg = filePreviewContainer.querySelector(".file-preview-img");
+        let docPreview = filePreviewContainer.querySelector(".file-preview-doc");
+        
+        if (file.type.startsWith("image/")) {
+            if (docPreview) docPreview.remove();
+            previewImg.src = e.target.result;
+            previewImg.style.display = "block";
+        } else {
+            previewImg.style.display = "none";
+            if (!docPreview) {
+                docPreview = document.createElement("div");
+                docPreview.className = "file-preview-doc";
+                docPreview.style.cssText = "padding: 10px 15px; background: rgba(255,255,255,0.1); border-radius: 8px; color: #fff; display: flex; align-items: center; gap: 8px; font-size: 0.9rem;";
+                filePreviewContainer.querySelector(".file-preview-item").prepend(docPreview);
+            }
+            docPreview.innerHTML = `<span class="material-symbols-rounded">description</span> <span>${file.name}</span>`;
+        }
+        
         filePreviewContainer.classList.add("active");
         updateSendBtnState();
     };
@@ -224,6 +247,8 @@ document.querySelector("#cancel-file-btn").addEventListener("click", () => {
     attachedFile = null;
     fileInput.value = "";
     filePreviewContainer.classList.remove("active");
+    const docPreview = filePreviewContainer.querySelector(".file-preview-doc");
+    if (docPreview) docPreview.remove();
     updateSendBtnState();
 });
 
@@ -252,10 +277,13 @@ const handleFormSubmit = async (e) => {
     promptInput.value = "";
     promptInput.disabled = true;
     
+    sendBtn.style.display = "none";
+    stopBtn.style.display = "block";
+    
     // Toggle Visibility immediately
     toggleWelcomeScreen();
 
-    const userHtml = `<div class="message-content">${attachedFile ? `<img src="${attachedFile.preview}" style="max-width:200px; border-radius:12px; margin-bottom:10px; display:block;">` : ''}<p class="message-text">${userMessage.replace(/\n/g, "<br>")}</p></div>`;
+    const userHtml = `<button class="edit-msg-btn" onclick="editMessage(this)" title="Edit Message"><span class="material-symbols-rounded" style="font-size:18px;">edit</span></button><div class="message-content">${attachedFile && attachedFile.mime.startsWith("image/") ? `<img src="${attachedFile.preview}" style="max-width:200px; border-radius:12px; margin-bottom:10px; display:block;">` : (attachedFile ? `<div style="padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px; margin-bottom: 10px; display: inline-flex; align-items: center; gap: 8px;"><span class="material-symbols-rounded">description</span> ${attachedFile.name}</div>` : '')}<p class="message-text">${userMessage.replace(/\n/g, "<br>")}</p></div>`;
     chatsContainer.appendChild(createMessageElement(userHtml, "user-message"));
     scrollToBottom();
 
@@ -281,6 +309,7 @@ const handleFormSubmit = async (e) => {
                 message: userMessage,
                 history: chatHistory,
                 model: modelSelect.value,
+                persona: personaSelect.value,
                 image: currentImage ? { inlineData: { data: currentImage.data, mimeType: currentImage.mime } } : null,
                 sessionId: currentSessionId
             }),
@@ -335,6 +364,8 @@ const handleFormSubmit = async (e) => {
         promptInput.disabled = false;
         promptInput.focus();
         abortController = null;
+        sendBtn.style.display = "block";
+        stopBtn.style.display = "none";
     }
 };
 
@@ -352,6 +383,45 @@ document.querySelector("#theme-toggle-btn").addEventListener("click", () => docu
 document.querySelector("#delete-chats-btn").addEventListener("click", () => {
     deleteSession(currentSessionId);
 });
+
+// --- Stop & Edit Logic ---
+stopBtn.addEventListener("click", () => {
+    if (abortController) {
+        abortController.abort();
+        isGenerating = false;
+        promptInput.disabled = false;
+        sendBtn.style.display = "block";
+        stopBtn.style.display = "none";
+    }
+});
+
+window.editMessage = (btn) => {
+    if (isGenerating) return;
+    
+    const messageDiv = btn.closest(".user-message");
+    const messageText = messageDiv.querySelector(".message-text").innerHTML.replace(/<br>/g, "\n");
+    
+    // Find index
+    const allMessages = Array.from(chatsContainer.querySelectorAll(".message"));
+    const index = allMessages.indexOf(messageDiv);
+    
+    // Truncate history
+    if (index !== -1) {
+        chatHistory = chatHistory.slice(0, index);
+        sessions[currentSessionId].history = chatHistory;
+        saveSessions();
+        
+        // Remove from DOM from this index onwards
+        for (let i = allMessages.length - 1; i >= index; i--) {
+            allMessages[i].remove();
+        }
+    }
+    
+    promptInput.value = messageText;
+    promptInput.focus();
+    updateSendBtnState();
+    toggleWelcomeScreen();
+};
 
 
 // ==========================================

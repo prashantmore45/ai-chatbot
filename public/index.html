@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
     <title>Gemini AI ChatBot</title>
     
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -44,6 +44,15 @@
                         <select id="model-select">
                             <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                             <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                        </select>
+                    </div>
+                    <div class="model-selector">
+                        <span class="material-symbols-rounded">person</span>
+                        <select id="persona-select">
+                            <option value="assistant">Assistant</option>
+                            <option value="coder">Expert Coder</option>
+                            <option value="writer">Creative Writer</option>
+                            <option value="travel">Travel Guide</option>
                         </select>
                     </div>
                 </div>
@@ -95,13 +104,16 @@
                 <form action="#" class="prompt-form">
                     <div class="input-wrapper">
                         <div class="file-actions">
-                            <input type="file" accept="image/png, image/jpeg, image/webp" id="file-input" hidden>
-                            <button type="button" id="add-file-btn" class="icon-btn action-btn"><span class="material-symbols-rounded">add_photo_alternate</span></button>
+                            <input type="file" accept="image/png, image/jpeg, image/webp, application/pdf, text/plain" id="file-input" hidden>
+                            <button type="button" id="add-file-btn" class="icon-btn action-btn"><span class="material-symbols-rounded">attach_file</span></button>
                         </div>
 
                         <input type="text" placeholder="Ask Gemini" class="prompt-input" required>
                         <button type="button" id="mic-btn" class="icon-btn" title="Voice Input">
                             <span class="material-symbols-rounded">mic</span>
+                        </button>
+                        <button id="stop-btn" type="button" class="icon-btn stop-btn" title="Stop Generating" style="display: none; color: #ff4444;">
+                            <span class="material-symbols-rounded">stop_circle</span>
                         </button>
                         <button id="send-prompt-btn" class="icon-btn send-btn"><span class="material-symbols-rounded">send</span></button>
                     </div>

@@ -68,7 +68,7 @@ const updateMemoryAsync = async (sessionId, history) => {
 
 app.post("/api/generate-stream", async (req, res) => {
     try {
-        const { message, history, model, image, sessionId } = req.body;
+        const { message, history, model, persona, image, sessionId } = req.body;
 
         const modelMap = {
           "gemini-2.5-flash": "gemini-2.5-flash",
@@ -77,17 +77,27 @@ app.post("/api/generate-stream", async (req, res) => {
 
         const selectedModel = modelMap[model] || "gemini-2.5-flash";
 
-        console.log(`🤖 Using model: ${selectedModel} for session: ${sessionId || "default"}`);
+        console.log(`🤖 Using model: ${selectedModel} | Persona: ${persona || 'default'} | Session: ${sessionId || "default"}`);
 
         // 1. Setup Stream Headers (SSE)
         res.setHeader("Content-Type", "text/event-stream");
         res.setHeader("Cache-Control", "no-cache");
         res.setHeader("Connection", "keep-alive");
 
-        // 2. Load Memory Context
+        // 2. Load Memory Context & Persona
         const memory = await loadMemory(sessionId);
+        
+        let personaContext = "You are a helpful AI Assistant.";
+        if (persona === "coder") {
+            personaContext = "You are an Expert Software Developer. You write clean, efficient, and well-documented code. Explain your logic clearly.";
+        } else if (persona === "writer") {
+            personaContext = "You are a Creative Writer. You craft engaging, imaginative, and well-structured text.";
+        } else if (persona === "travel") {
+            personaContext = "You are a Travel Guide. You provide detailed itineraries, budgeting tips, and cultural insights.";
+        }
+
         const systemInstruction = `
-            You are a helpful AI Assistant.
+            ${personaContext}
             User Context: ${JSON.stringify(memory.profile)}
             Current Project: ${JSON.stringify(memory.project)}
             Technical Context: ${JSON.stringify(memory.technical)}
