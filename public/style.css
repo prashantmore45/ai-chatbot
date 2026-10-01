@@ -707,7 +707,7 @@ body.light-mode .prompt-box:focus-within {
         width: 100%;
         margin: 0 0 20px 0 !important;
         padding: 0;
-        overflow-x: hidden;
+        overflow: visible;
     }
 
     .suggestions-item {
