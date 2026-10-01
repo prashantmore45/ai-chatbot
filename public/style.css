@@ -71,9 +71,60 @@ body.light-mode .sidebar {
     margin-left: -260px;
 }
 
+.sidebar-overlay {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 90;
+    opacity: 0;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-overlay.active {
+    display: block;
+    opacity: 1;
+}
+
 .sidebar-header {
     padding: 1rem;
     flex-shrink: 0;
+}
+
+.sidebar-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.sidebar-app-name {
+    font-size: 1.4rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+
+.icon-sparkle {
+    font-size: 1.6rem;
+    background: linear-gradient(74deg, #4285F4 0%, #9B72CB 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.brand-text {
+    font-family: 'Outfit', sans-serif;
+    background: linear-gradient(74deg, #4285F4 0%, #9B72CB 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
 }
 
 .new-chat-btn {
@@ -170,6 +221,12 @@ body.light-mode .sidebar {
     gap: 12px;
 }
 
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 /* ---------- Top Nav ---------- */
 .top-nav {
     display: flex;
@@ -264,6 +321,9 @@ body.light-mode .model-selector:hover {
     width: 100%;
     overflow-y: auto;
 }
+
+.welcome-screen::-webkit-scrollbar { width: 6px; }
+.welcome-screen::-webkit-scrollbar-thumb { background: var(--surface-color); border-radius: 3px; }
 
 /* Header Wrapper */
 .welcome-header-content {
@@ -386,6 +446,18 @@ body.light-mode .suggestions-item:hover {
 .bot-message { align-items: flex-start; width: 100%; }
 
 .avatar { width: 30px; height: 30px; flex-shrink: 0; }
+.sparkle-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+}
+.sparkle-avatar span {
+    font-size: 24px;
+    background: linear-gradient(74deg, #4285F4 0%, #9B72CB 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
 .bot-message.loading .avatar { animation: rotate 3s linear infinite; }
 
 .bot-message .message-content {
@@ -564,18 +636,56 @@ body.light-mode .prompt-box:focus-within {
         padding: 0.5rem; 
         min-height: 0; 
     }
+
+    .top-nav {
+        padding: 0.8rem 0.5rem;
+        flex-wrap: nowrap;
+        gap: 6px;
+    }
+    
+    .nav-left {
+        gap: 4px;
+        flex-wrap: nowrap;
+        min-width: 0;
+        flex: 1;
+    }
+    
+    .nav-right {
+        gap: 4px;
+        flex-shrink: 0;
+    }
+    
+    .model-selector {
+        padding: 5px 8px;
+        font-size: 0.8rem;
+        gap: 4px;
+        min-width: 0;
+    }
+    
+    .model-selector select {
+        font-size: 0.8rem;
+        min-width: 0;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+    }
     
     .header { font-size: 2rem; }
 
     .welcome-screen {
         width: 100%;
-
         flex: 1 1 auto; 
         justify-content: flex-start; 
         overflow-y: auto !important; 
         overflow-x: hidden !important; 
-        padding-top: 1rem;
-        padding-bottom: 100px; 
+        padding-top: 3rem;
+        padding-bottom: 70px; 
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE/Edge */
+    }
+
+    .welcome-screen::-webkit-scrollbar {
+        display: none !important;
     }
 
     .sidebar {
@@ -589,25 +699,26 @@ body.light-mode .prompt-box:focus-within {
         box-shadow: 4px 0 15px rgba(0,0,0,0.5);
     }
 
-    /* 2. FIX SUGGESTIONS (Horizontal Scroll) */
+    /* 2. FIX SUGGESTIONS (Grid for mobile) */
     .suggestions { 
-        display: flex;
-        flex-wrap: nowrap; 
-        justify-content: flex-start;
-        overflow-x: auto; 
-        margin-bottom: 20px !important; 
-        padding-bottom: 5px;
-        width: 100vw; 
-        margin-left: -1rem; 
-        padding-left: 1rem; 
-        padding-right: 1rem;
-        flex-shrink: 0;
-        scrollbar-width: none !important; 
-        -ms-overflow-style: none; 
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        width: 100%;
+        margin: 0 0 20px 0 !important;
+        padding: 0;
+        overflow-x: hidden;
+    }
+
+    .suggestions-item {
+        width: 100%;
+        height: auto;
+        min-height: 120px;
+        padding: 1rem;
     }
     
-    .suggestions::-webkit-scrollbar { 
-        display: none !important; 
+    .suggestions-item .text {
+        font-size: 0.9rem;
     }
 
     /* 3. FIX INPUT AREA */

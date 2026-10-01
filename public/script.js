@@ -124,8 +124,8 @@ function switchSession(id) {
                 const userHtml = `<button class="edit-msg-btn" onclick="editMessage(this)" title="Edit Message"><span class="material-symbols-rounded" style="font-size:18px;">edit</span></button><div class="message-content"><p class="message-text">${text}</p></div>`;
                 chatsContainer.appendChild(createMessageElement(userHtml, "user-message"));
             } else if (msg.role === "model") {
-                const text = marked.parse(msg.parts[0].text, { breaks: true });
-                chatsContainer.appendChild(createMessageElement(`<div class="bot-message message"><img src="https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg" class="avatar"><div class="message-content"><div class="message-text">${text}</div><button class="speak-btn" onclick="speakText(this)"><span class="material-symbols-rounded">volume_up</span></button></div></div>`, "bot-message"));
+                const text = DOMPurify.sanitize(marked.parse(msg.parts[0].text, { breaks: true }));
+                chatsContainer.appendChild(createMessageElement(`<div class="bot-message message"><div class="avatar sparkle-avatar"><span class="material-symbols-rounded">auto_awesome</span></div><div class="message-content"><div class="message-text">${text}</div><button class="speak-btn" onclick="speakText(this)"><span class="material-symbols-rounded">volume_up</span></button></div></div>`, "bot-message"));
             }
         });
     }
@@ -134,6 +134,7 @@ function switchSession(id) {
     
     if (window.innerWidth <= 768) {
         document.getElementById("sidebar").classList.remove("mobile-open");
+        document.getElementById("sidebar-overlay")?.classList.remove("active");
     }
 }
 
@@ -156,18 +157,60 @@ function deleteSession(id) {
 
 // Sidebar toggle & New Chat button
 document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("toggle-sidebar-btn")?.addEventListener("click", () => {
-        const sidebar = document.getElementById("sidebar");
+    const sidebar = document.getElementById("sidebar");
+    const sidebarOverlay = document.getElementById("sidebar-overlay");
+    const toggleSidebarBtn = document.getElementById("toggle-sidebar-btn");
+
+    function updateHamburgerVisibility() {
+        if (!toggleSidebarBtn) return;
+        if (window.innerWidth > 768) {
+            // Desktop: show hamburger only if sidebar is closed (hidden)
+            if (sidebar.classList.contains("hidden")) {
+                toggleSidebarBtn.style.display = "flex";
+            } else {
+                toggleSidebarBtn.style.display = "none";
+            }
+        } else {
+            // Mobile: always show hamburger in navbar
+            toggleSidebarBtn.style.display = "flex";
+        }
+    }
+
+    // Call initially and on window resize
+    updateHamburgerVisibility();
+    window.addEventListener("resize", updateHamburgerVisibility);
+
+    toggleSidebarBtn?.addEventListener("click", () => {
         sidebar.classList.toggle("hidden");
         if(window.innerWidth <= 768) {
             sidebar.classList.toggle("mobile-open");
+            sidebarOverlay?.classList.toggle("active");
+        }
+        updateHamburgerVisibility();
+    });
+
+    document.getElementById("close-sidebar-btn")?.addEventListener("click", () => {
+        if(window.innerWidth <= 768) {
+            sidebar.classList.remove("mobile-open");
+            sidebarOverlay?.classList.remove("active");
+        } else {
+            sidebar.classList.add("hidden");
+        }
+        updateHamburgerVisibility();
+    });
+
+    sidebarOverlay?.addEventListener("click", () => {
+        if(window.innerWidth <= 768) {
+            sidebar.classList.remove("mobile-open");
+            sidebarOverlay.classList.remove("active");
         }
     });
 
     document.getElementById("new-chat-btn")?.addEventListener("click", () => {
         createNewSession();
         if (window.innerWidth <= 768) {
-            document.getElementById("sidebar").classList.remove("mobile-open");
+            sidebar.classList.remove("mobile-open");
+            sidebarOverlay?.classList.remove("active");
         }
     });
 
@@ -179,8 +222,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 const userHtml = `<button class="edit-msg-btn" onclick="editMessage(this)" title="Edit Message"><span class="material-symbols-rounded" style="font-size:18px;">edit</span></button><div class="message-content"><p class="message-text">${text}</p></div>`;
                 chatsContainer.appendChild(createMessageElement(userHtml, "user-message"));
             } else if (msg.role === "model") {
-                const text = marked.parse(msg.parts[0].text, { breaks: true });
-                chatsContainer.appendChild(createMessageElement(`<div class="bot-message message"><img src="https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg" class="avatar"><div class="message-content"><div class="message-text">${text}</div><button class="speak-btn" onclick="speakText(this)"><span class="material-symbols-rounded">volume_up</span></button></div></div>`, "bot-message"));
+                const text = DOMPurify.sanitize(marked.parse(msg.parts[0].text, { breaks: true }));
+                chatsContainer.appendChild(createMessageElement(`<div class="bot-message message"><div class="avatar sparkle-avatar"><span class="material-symbols-rounded">auto_awesome</span></div><div class="message-content"><div class="message-text">${text}</div><button class="speak-btn" onclick="speakText(this)"><span class="material-symbols-rounded">volume_up</span></button></div></div>`, "bot-message"));
             }
         });
         toggleWelcomeScreen();
@@ -292,7 +335,7 @@ const handleFormSubmit = async (e) => {
     filePreviewContainer.classList.remove("active");
     updateSendBtnState();
 
-    const botHtml = `<div class="bot-message message"><img src="https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg" class="avatar"><div class="message-content"><div class="message-text">Thinking...</div><button class="speak-btn" onclick="speakText(this)"><span class="material-symbols-rounded">volume_up</span></button></div></div>`;
+    const botHtml = `<div class="bot-message message"><div class="avatar sparkle-avatar"><span class="material-symbols-rounded">auto_awesome</span></div><div class="message-content"><div class="message-text">Thinking...</div><button class="speak-btn" onclick="speakText(this)"><span class="material-symbols-rounded">volume_up</span></button></div></div>`;
     const botMsgDiv = createMessageElement(botHtml, "bot-message");
     botMsgDiv.classList.add("loading");
     chatsContainer.appendChild(botMsgDiv);
@@ -336,7 +379,7 @@ const handleFormSubmit = async (e) => {
                     try {
                         const jsonStr = line.replace("data: ", "");
                         accumulatedText += JSON.parse(jsonStr);
-                        textElement.innerHTML = marked.parse(accumulatedText, { breaks: true });
+                        textElement.innerHTML = DOMPurify.sanitize(marked.parse(accumulatedText, { breaks: true }));
                         scrollToBottom(); 
                     } catch (e) {}
                 }
