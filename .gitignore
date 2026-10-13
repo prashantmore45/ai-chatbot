@@ -2,3 +2,4 @@
 node_modules
 backend/memory/*.json
 .DS_Store
+project.txt
